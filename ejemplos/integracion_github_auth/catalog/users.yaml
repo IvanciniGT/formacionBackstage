@@ -1,0 +1,24 @@
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: ivan
+  annotations:
+    backstage.io/email: ivan@example.com
+spec:
+  profile:
+    displayName: Iván García
+    email: ivan@example.com
+  memberOf: [devs]
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: menchu
+  annotations:
+    backstage.io/email: menchu@example.com
+spec:
+  profile:
+    displayName: Menchu Ruiz
+    email: menchu@example.com
+  memberOf: [devs]

@@ -1,0 +1,76 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: trigger-python-service
+  title: Servicio Python con Jenkins
+  description: Crea un servicio Python, lo sube a GitHub, lanza Jenkins y lo registra.
+spec:
+  owner: platform-team
+  type: service
+
+  parameters:
+    - title: Información del servicio
+      required: [name, owner, repoUrl]
+      properties:
+        name:
+          type: string
+          title: Nombre del servicio
+        owner:
+          type: string
+          title: Propietario del servicio
+        repoUrl:
+          type: string
+          title: URL del repositorio GitHub (github.com?owner=ORG&repo=REPO)
+
+  steps:
+    - id: fetch
+      name: Descargar plantilla
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          name: ${{ parameters.name }}
+          owner: ${{ parameters.owner }}
+
+    - id: publish
+      name: Subir a GitHub
+      action: publish:github
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: main
+        description: Proyecto generado desde plantilla Backstage
+
+    - id: get-jenkins-crumb
+      name: Obtener Jenkins Crumb
+      action: http:backstage:request
+      input:
+        method: GET
+        path: /proxy/jenkins/crumbIssuer/api/json
+        headers:
+          Authorization: Basic ${{ secrets.jenkinsBasicAuth }}
+
+    - id: trigger-jenkins
+      name: Lanzar Job Jenkins
+      action: http:backstage:request
+      input:
+        method: POST
+        path: /proxy/jenkins/job/deploy-python/buildWithParameters
+        query:
+          COMPONENT_NAME: ${{ parameters.name }}
+        headers:
+          Authorization: Basic ${{ secrets.jenkinsBasicAuth }}
+          Jenkins-Crumb: ${{ steps['get-jenkins-crumb'].output.body.crumb }}
+
+    - id: register
+      name: Registrar en el catálogo
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Repositorio en GitHub
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Ver en Backstage
+        url: /catalog/default/component/${{ parameters.name }}

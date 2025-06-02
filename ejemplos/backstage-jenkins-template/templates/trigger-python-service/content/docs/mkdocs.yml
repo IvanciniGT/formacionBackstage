@@ -1,0 +1,4 @@
+site_name: ${{ values.name }} Docs
+nav:
+  - Overview: index.md
+docs_dir: .docs
